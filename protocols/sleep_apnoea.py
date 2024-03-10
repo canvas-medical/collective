@@ -6,39 +6,19 @@ from canvas_workflow_kit.protocol import (
 )
 
 from canvas_workflow_kit.constants import CHANGE_TYPE
-from canvas_workflow_kit.recommendation import InterviewRecommendation
+from canvas_workflow_kit.recommendation import InstructionRecommendation
 from canvas_workflow_kit.value_set import ValueSet
 
 
 class OSAHS(ValueSet):
-    """
-    **Clinical Focus:** The purpose of this value set is to represent concepts for a diagnosis of OSAHS.
-
-    **Data Element Scope:** This value set may use a model element related to Diagnosis.
-
-    **Inclusion Criteria:** Includes concepts that represent a diagnosis of OSAHS.
-
-    **Exclusion Criteria:** No exclusions.
-
-    ** Used in:** ---
-    """
-
-    VALUE_SET_NAME = "OSAHS"
-    OID = ""
-    DEFINITION_VERSION = ""
-    EXPANSION_VERSION = ""
-
-    ICD10CM = {
-        "G4733",  # Obstructive sleep apnea (adult) (pediatric)
-    }
-    SNOMEDCT = {
-        "101301000119106",  # Obstructive sleep apnea (adult) (pediatric)
-    }
+    VALUE_SET_NAME = "Obstructive Sleep Apnoea Hypopnoea Syndrome"
+    ICD10CM = {"G4733"}
+    SNOMEDCT = {"101301000119106"}
 
 
-class SleepClinicAssessment(ValueSet):
-    VALUE_SET_NAME = "Sleep clinic with consultant"
-    LOINC = {"70002-1"}
+class CPAPRecommndation(ValueSet):
+    VALUE_SET_NAME = "Recommend CPAP"
+    SNOWMEDCT = {"702172008"}
 
 
 class SleepApnoeaOfferCPAP(ClinicalQualityMeasure):
@@ -53,7 +33,7 @@ class SleepApnoeaOfferCPAP(ClinicalQualityMeasure):
             "sleep apnoea hypopnoea syndrome"
         )
 
-        version = "0.001"
+        version = "0.004"
 
         information = "https://docs.canvasmedical.com"
 
@@ -84,7 +64,9 @@ class SleepApnoeaOfferCPAP(ClinicalQualityMeasure):
         """
         Patients that have already been notified.
         """
-        # check if patient already offered CPAP
+        if self.patient.instructions.find(CPAPRecommndation):
+            return True
+
         return False
 
     def compute_results(self) -> ProtocolResult:
@@ -104,13 +86,14 @@ class SleepApnoeaOfferCPAP(ClinicalQualityMeasure):
                 )
 
                 result.add_recommendation(
-                    InterviewRecommendation(
+                    InstructionRecommendation(
                         key="CPAP_offer",
                         rank=1,
-                        button="Interview",
+                        button="Instruct",
                         patient=self.patient,
-                        questionnaires=[SleepClinicAssessment],
+                        instruction=CPAPRecommndation,
                         title="Offer CPAP",
+                        narrative="Offer CPAP treatment to the patient",
                     )
                 )
         return result
