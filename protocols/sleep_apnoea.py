@@ -9,6 +9,8 @@ from canvas_workflow_kit.constants import CHANGE_TYPE
 from canvas_workflow_kit.recommendation import InstructionRecommendation
 from canvas_workflow_kit.value_set import ValueSet
 
+version_number = "0.0012"
+
 
 class OSAHS(ValueSet):
     VALUE_SET_NAME = "Obstructive Sleep Apnoea Hypopnoea Syndrome"
@@ -18,7 +20,7 @@ class OSAHS(ValueSet):
 
 class CPAPRecommndation(ValueSet):
     VALUE_SET_NAME = "Recommend CPAP"
-    SNOWMEDCT = {"702172008"}
+    SNOMEDCT = {"702172008"}
 
 
 class SleepApnoeaOfferCPAP(ClinicalQualityMeasure):
@@ -33,17 +35,18 @@ class SleepApnoeaOfferCPAP(ClinicalQualityMeasure):
             "sleep apnoea hypopnoea syndrome"
         )
 
-        version = "0.004"
+        version = version_number
 
         information = "https://docs.canvasmedical.com"
 
         identifiers = ["G4733"]
 
-        types = []
+        types = ["CQM"]
 
         compute_on_change_types = [
             CHANGE_TYPE.CONDITION,
             CHANGE_TYPE.LAB_REPORT,
+            CHANGE_TYPE.INSTRUCTION,
         ]
 
         references = [
@@ -76,13 +79,13 @@ class SleepApnoeaOfferCPAP(ClinicalQualityMeasure):
             if self.in_numerator():
                 result.status = STATUS_SATISFIED
                 result.add_narrative(
-                    f"{self.patient.first_name} has already been offered CPAP"
+                    f"{ version_number } - {self.patient.first_name} has already been offered CPAP."
                 )
             else:
                 result.status = STATUS_DUE
                 result.due_in = -1
                 result.add_narrative(
-                    f"{self.patient.first_name} should be offered CPAP treatment"
+                    f"{ version_number } - {self.patient.first_name} should be offered CPAP treatment."
                 )
 
                 result.add_recommendation(
