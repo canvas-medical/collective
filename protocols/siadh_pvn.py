@@ -11,6 +11,7 @@ from canvas_workflow_kit.value_set.value_set import ValueSet
 from canvas_workflow_kit.timeframe import Timeframe
 
 class TSSurgery(ValueSet):
+    VALUE_SET_NAME = "Transsphenoidal Surgery"
     ICD10PCS = {
         '0BBH0ZZ',
         '0BBH3ZZ',
