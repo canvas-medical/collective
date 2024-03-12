@@ -28,7 +28,7 @@ class ConcussionRTPInstructions(ValueSet):
     VALUE_SET_NAME = 'Concussion RTP Instructions'
     EXPANSION_VERSION = 'pending'
 
-    SNOMEDCT = {'110030002'}
+    SNOMEDCT = {'229191008'}
 
 
 class ReturnToPlayConcussion(ClinicalQualityMeasure):
