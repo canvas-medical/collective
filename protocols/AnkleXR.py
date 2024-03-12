@@ -13,7 +13,7 @@ from canvas_workflow_kit.value_set import ValueSet
 class AnkleInjury(ValueSet):
     VALUE_SET_NAME = 'Ankle Injury'
     SNOMEDCT = {'125603006'}
-    ICD10 = {'S93.402A'}
+    ICD10CM = {'S93.402A'}
 
 class AnkleXR2V(ValueSet):
     """
