@@ -12,6 +12,8 @@ from canvas_workflow_kit.timeframe import Timeframe
 
 class TSSurgery(ValueSet):
     VALUE_SET_NAME = "Transsphenoidal Surgery"
+    OID = "1"
+    EXPANSION_VERSION = "fixing erroneous code"
     ICD10PCS = {
         '0BBH0ZZ',
         '0BBH3ZZ',
@@ -35,13 +37,15 @@ class TSSurgery(ValueSet):
 
     SNOMEDCT = {
         '46296006',
+        '82421004',
         '53158000',
         '67598004',
         '276274008',
         '446813000',
         '446814006',
         '726755001',
-        '726756000'
+        '726756000',
+        '23676000'
     }
 
     CPT = {
@@ -83,9 +87,9 @@ class MyFirstProtocol(ClinicalQualityMeasure):
 
         description = 'The protocol Ed Laws and I published to prevent SIADH in post-op TSS patients'
 
-        version = ''
+        version = '3.92'
 
-        information = ''
+        information = 'filler info'
 
         identifiers = ['CMS12345v1']
 
@@ -104,17 +108,20 @@ class MyFirstProtocol(ClinicalQualityMeasure):
         """
         Patients who have had the surgery.
         """
-        return self.patient.procedures.find(TSSurgery)
+        return self.patient.procedures.find(TSSurgery) or self.patient.conditions.find(TSSurgery)
 
     def in_numerator(self):
         """
         Patients who have had the surgery in the window of intervention.
         """
         last_TS_surgery_timeframe = Timeframe(self.now.shift(days=-7), self.now)
-        TSSurg_screening = self.patient.interviews.find(
+
+        TSSurg_screening_conditions = self.patient.conditions.find(
             TSSurgery
         ).within(last_TS_surgery_timeframe)
-        return bool(TSSurg_screening)
+
+        # Return True if TSSurgery is found in either procedures or conditions within the timeframe
+        return bool(TSSurg_screening_conditions)
 
     def compute_results(self):
         result = ProtocolResult()
@@ -134,7 +141,7 @@ class MyFirstProtocol(ClinicalQualityMeasure):
                         button="Prescribe",
                         patient=self.patient,
                         prescription=FluidRestriction,
-                        title='Interview Patient About Choices',
+                        title=f'Interview Patient About Choices {self.patient.first_name}',
                         context={
                             'sig_original_input': 'restrict fluid intake to 1 liter per day for 7 days',
                             'duration_in_days': 7,
