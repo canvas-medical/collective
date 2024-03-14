@@ -61,11 +61,9 @@ class FluidRestriction(ValueSet):
         '4A0955Z',  # Measurement of Fluid Balance, Monitoring, Circulatory Approach
         '4A0965Z'  # Measurement of Fluid Balance, Monitoring, Respiratory Approach
     }
-
     ICD9CM = {
         '25.82'  # Fluid restriction
     }
-
     SNOMEDCT = {
         '61426000',  # Fluid intake restriction
         '226355009',  # Restriction of fluid intake
