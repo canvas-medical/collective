@@ -6,7 +6,7 @@ from canvas_workflow_kit.protocol import (
 )
 
 from canvas_workflow_kit.constants import CHANGE_TYPE
-from canvas_workflow_kit.recommendation import Recommendation, PrescribeRecommendation
+from canvas_workflow_kit.recommendation import InstructionRecommendation
 from canvas_workflow_kit.value_set.value_set import ValueSet
 from canvas_workflow_kit.timeframe import Timeframe
 
@@ -23,16 +23,6 @@ class TSSurgery(ValueSet):
         '0BBJ3ZZ',
         '0BBJ4ZZ',
         '0BBJ8ZZ'
-    }
-
-    ICD9CM = {
-        '07.61',
-        '07.62',
-        '07.63',
-        '07.64',
-        '07.65',
-        '07.68',
-        '07.69'
     }
 
     SNOMEDCT = {
@@ -54,47 +44,31 @@ class TSSurgery(ValueSet):
     }
 
 class FluidRestriction(ValueSet):
-    VALUE_SET_NAME = "Fluid Restriction"
-    ICD10PCS = {
-        '4A0935Z',  # Measurement of Fluid Balance, Monitoring, External Approach
-        '4A0945Z',  # Measurement of Fluid Balance, Monitoring, Internal Approach
-        '4A0955Z',  # Measurement of Fluid Balance, Monitoring, Circulatory Approach
-        '4A0965Z'  # Measurement of Fluid Balance, Monitoring, Respiratory Approach
-    }
-    ICD9CM = {
-        '25.82'  # Fluid restriction
-    }
+    VALUE_SET_NAME = "Fluid Restriction 1L/day"
     SNOMEDCT = {
-        '61426000',  # Fluid intake restriction
-        '226355009',  # Restriction of fluid intake
-        '226358006',  # Fluid balance management
-        '243807004',  # Strict fluid balance management
-        '274411005',  # Fluid restriction education
-        '286024002',  # Monitoring of fluid input/output
-        '361231003',  # Fluid restriction therapy
-        '443288003',  # Fluid balance education
-        '710742001',  # Monitoring of fluid restriction
         '710743006'  # Fluid restriction regimen
     }
 
-class MyFirstProtocol(ClinicalQualityMeasure):
+class SIADH_PVN_POST_TSS(ClinicalQualityMeasure):
 
     class Meta:
 
-        title = 'Ed Laws SIADH Prevention Protocol'
+        title = 'SIADH Prevention Protocol following Transsphenoidal surgery'
 
-        description = 'The protocol Ed Laws and I published to prevent SIADH in post-op TSS patients'
+        description = 'The protocol Ed Laws published to prevent SIADH in post-op TSS patients'
 
-        version = '3.92'
+        version = '1'
 
-        information = 'filler info'
+        information = 'Instruct the patient to restrict fluids to 1L for 7 days following transsphenoidal surgery. ' \
+                      'This has been proven to prevent SIADH in patients post-surgery.'
 
         identifiers = ['CMS12345v1']
 
         types = ['CQM']
 
         compute_on_change_types = [
-            CHANGE_TYPE.CONDITION
+            CHANGE_TYPE.CONDITION,
+            CHANGE_TYPE.INSTRUCTION
         ]
 
         references = [
@@ -106,20 +80,21 @@ class MyFirstProtocol(ClinicalQualityMeasure):
         """
         Patients who have had the surgery.
         """
-        return self.patient.procedures.find(TSSurgery) or self.patient.conditions.find(TSSurgery)
+        return self.patient.conditions.find(TSSurgery)
 
     def in_numerator(self):
         """
-        Patients who have had the surgery in the window of intervention.
+        Patients who have had the surgery in the window of intervention and does not have water restriction instruction.
         """
-        last_TS_surgery_timeframe = Timeframe(self.now.shift(days=-7), self.now)
+        last_TS_surgery_timeframe = Timeframe(self.now.shift(days=-100), self.now)
 
-        TSSurg_screening_conditions = self.patient.conditions.find(
-            TSSurgery
-        ).within(last_TS_surgery_timeframe)
+        water_restriction_present = self.patient.instructions.find(FluidRestriction)
 
-        # Return True if TSSurgery is found in either procedures or conditions within the timeframe
-        return bool(TSSurg_screening_conditions)
+        context_conditions = ((self.patient.conditions.find(TSSurgery).intersects(
+            last_TS_surgery_timeframe, still_active=self.patient.active_only)) and not water_restriction_present)
+
+        # Return True if TSSurgery is found in conditions within the timeframe and water restriction isnt true
+        return bool(context_conditions)
 
     def compute_results(self):
         result = ProtocolResult()
@@ -128,23 +103,17 @@ class MyFirstProtocol(ClinicalQualityMeasure):
             if self.in_numerator():  # If they had TSS in last 7 days (otherwise they are outside the window)
                 result.status = STATUS_DUE
                 result.due_in = -1
-                result.add_narrative(
-                    f'{self.patient.first_name} should be prescribed fluid restriction'
-                )
 
-                result.add_recommendation(
-                    PrescribeRecommendation(
-                        key='PRESCRIBE_WATER_RESTRICTION',
+                fluid_restriction_instruction = InstructionRecommendation(
+                        key='INSTRUCT_WATER_RESTRICTION',
                         rank=1,
-                        button="Prescribe",
+                        button="Instruct",
                         patient=self.patient,
-                        prescription=FluidRestriction,
-                        title=f'Interview Patient About Choices {self.patient.first_name}',
-                        context={
-                            'sig_original_input': 'restrict fluid intake to 1 liter per day for 7 days',
-                            'duration_in_days': 7,
-                            'dispense_quantity': 1
-                        }
+                        instruction=FluidRestriction,
+                        title=f'Suggest fluid restriction',
+                        narrative='restrict fluid intake to 1 liter per day for 7 days after surgery'
                     )
-                )
+
+                result.add_recommendation(fluid_restriction_instruction)
+                result.add_narrative(fluid_restriction_instruction.narrative)
         return result
