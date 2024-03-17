@@ -79,13 +79,13 @@ class SleepApnoeaOfferCPAP(ClinicalQualityMeasure):
             if self.in_numerator():
                 result.status = STATUS_SATISFIED
                 result.add_narrative(
-                    f"{ version_number } - {self.patient.first_name} has already been offered CPAP."
+                    f"{self.patient.first_name} has already been offered CPAP."
                 )
             else:
                 result.status = STATUS_DUE
                 result.due_in = -1
                 result.add_narrative(
-                    f"{ version_number } - {self.patient.first_name} should be offered CPAP treatment."
+                    f"{self.patient.first_name} should be offered CPAP treatment."
                 )
 
                 result.add_recommendation(
